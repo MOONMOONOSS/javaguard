@@ -1,3 +1,4 @@
+use std::path::{Path, PathBuf};
 use neon::prelude::*;
 
 mod openjdk;
@@ -19,6 +20,21 @@ static OPERATING_SYS: &str = "windows";
 
 #[cfg(target_os = "macos")]
 static OPERATING_SYS: &str = "mac";
+
+#[cfg(target_os = "linux")]
+fn path_to_java<'a>(root_path: &PathBuf) -> PathBuf {
+  PathBuf::from(&format!("{}/bin/java", root_path.display()))
+}
+
+#[cfg(target_os = "windows")]
+fn path_to_java<'a>(root_path: &PathBuf) -> PathBuf {
+  PathBuf::new(format!("{}/bin/javaw.exe", root_path.display()))
+}
+
+#[cfg(target_os = "macos")]
+fn path_to_java<'a>(root_path: &PathBuf) -> PathBuf {
+  PathBuf::new(format!("{}/Contents/Home/bin/java", root_path.display()))
+}
 
 fn latest_open_jdk(mut cx: FunctionContext) -> JsResult<JsValue> {
   use reqwest::blocking;
@@ -52,6 +68,33 @@ fn latest_open_jdk(mut cx: FunctionContext) -> JsResult<JsValue> {
   )
 }
 
+fn scan_file_system(mut cx: FunctionContext) -> JsResult<JsValue> {
+  let arg = cx.argument::<JsString>(0)?;
+  let search_str = String::from(&arg.value());
+  let search_path = Path::new(&search_str);
+  let mut valid_paths: Vec<PathBuf> = vec![];
+
+  if search_path.exists() {
+    for entry in search_path.read_dir().expect(&format!("Unable to search {} for entries", search_path.display())) {
+      if let Ok(entry) = entry {
+        let exe_path = path_to_java(&entry.path());
+
+        if exe_path.exists() {
+          valid_paths.push(exe_path);
+        }
+      }
+    }
+  }
+
+  Ok(
+    neon_serde::to_value(
+      &mut cx,
+      &valid_paths
+    )?
+  )
+}
+
 register_module!(mut cx, {
-  cx.export_function("latestOpenJdk", latest_open_jdk)
+  cx.export_function("latestOpenJdk", latest_open_jdk);
+  cx.export_function("scanFileSystem", scan_file_system)
 });
