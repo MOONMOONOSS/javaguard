@@ -52,11 +52,6 @@ fn latest_open_jdk(mut cx: FunctionContext) -> JsResult<JsValue> {
   )
 }
 
-fn hello(mut cx: FunctionContext) -> JsResult<JsString> {
-  Ok(cx.string("hello node"))
-}
-
 register_module!(mut cx, {
-  cx.export_function("hello", hello);
   cx.export_function("latestOpenJdk", latest_open_jdk)
 });
