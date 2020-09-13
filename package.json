@@ -1,0 +1,18 @@
+{
+  "name": "java-guard",
+  "version": "0.1.0",
+  "description": "An internal Java Runtime Environment validator used within Helios Launcher",
+  "main": "lib/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MOONMOONOSS/javaguard"
+  },
+  "author": "Joseph \"Dunkel\" Zurowski <12567900+Dunklheit@users.noreply.github.com>",
+  "license": "GPL-3.0",
+  "dependencies": {
+    "neon-cli": "^0.4.0"
+  },
+  "scripts": {
+    "install": "neon build"
+  }
+}
