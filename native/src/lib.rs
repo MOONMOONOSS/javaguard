@@ -64,8 +64,6 @@ fn scan_java_home() -> Option<PathBuf> {
 }
 
 fn validate_jvm_properties(stderr: &str) -> java::JavaMeta {
-  let GOAL = 2;
-  let checksum = 0;
   let mut meta = java::JavaMeta::new();
 
   for line in stderr.split('\n') {
