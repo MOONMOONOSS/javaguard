@@ -54,22 +54,37 @@ fn is_java_exe_path(path: &PathBuf) -> bool {
 }
 
 #[cfg(target_os = "windows")]
-fn scan_registry() {
+fn scan_registry() -> Vec<PathBuf> {
   use winreg::enums::*;
   use winreg::RegKey;
   
   let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
+  let mut candidates: Vec<PathBuf> = vec![];
 
   for entry in &REG_KEYS {
     match hklm.open_subkey(entry) {
       Ok(val) => {
         for value in val.enum_keys().map(|x| x.expect("Unable to enumerate registry keys")) {
           println!("{:#?}", value);
+          if value.to_str().contains("1.8") {
+            let sub_val = val.open_subkey(value).expect("Unable to open registry subkey");
+
+            match sub_val.get_value::<String>("JavaHome") {
+              Ok(path) => {
+                if !&path.contains("(x86)") {
+                  candidates.push(PathBuf::from(&path));
+                }
+              },
+              _ => {},
+            }
+          }
         }
       },
       _ => {},
     }
   }
+
+  candidates
 }
 
 fn scan_java_home() -> Option<PathBuf> {
@@ -248,7 +263,7 @@ fn java_validate(mut cx: FunctionContext) -> JsResult<JsValue> {
   let data_dir_arg = cx.argument::<JsString>(0)?;
   let data_dir = String::from(data_dir_arg.value());
   let mut super_set: Vec<PathBuf> = vec![];
-  scan_registry();
+  println!("{:#?}", scan_registry());
   super_set.extend(_scan_file_system("C:\\Program Files\\Java".to_owned())
     .iter()
     .cloned()
