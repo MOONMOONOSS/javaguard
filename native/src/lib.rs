@@ -9,8 +9,8 @@ static mojang_launcher_meta: &str = "https://launchermeta.mojang.com/mc/launcher
 
 #[cfg(target_os = "windows")]
 static REG_KEYS: Vec<&'static str> = vec![
-  "\\SOFTWARE\\JavaSoft\\Java Runtime Environment",
-  "\\SOFTWARE\\JavaSoft\\Java Development Kit",
+  "SOFTWARE\\JavaSoft\\Java Runtime Environment",
+  "SOFTWARE\\JavaSoft\\Java Development Kit",
 ];
 
 #[cfg(target_os = "linux")]
@@ -51,6 +51,25 @@ fn is_java_exe_path(path: &PathBuf) -> bool {
 #[cfg(target_os = "windows")]
 fn is_java_exe_path(path: &PathBuf) -> bool {
   path.ends_with("bin/javaw.exe")
+}
+
+#[cfg(target_os = "windows")]
+fn scan_registry() {
+  use winreg::enums::*;
+  use winreg::RegKey;
+  
+  let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
+
+  for entry in REG_KEYS {
+    match hklm.open_subkey(entry) {
+      Ok(val) => {
+        for (name, value) in val.enum_values().map(|x| x.expect("Unable to enumerate registry keys")) {
+          println!("{:#?}", name);
+          println!("{:#?}", value);
+        }
+      }
+    }
+  }
 }
 
 fn scan_java_home() -> Option<PathBuf> {
@@ -211,6 +230,40 @@ fn java_validate(mut cx: FunctionContext) -> JsResult<JsValue> {
 
   if let Some(path) = jhome {
     super_set.push(path);
+  }
+
+  let mut root_sets = validate_root_vec(&mut super_set);
+  root_sets.sort();
+  
+  Ok(
+    neon_serde::to_value(
+      &mut cx,
+      &root_sets
+    )?
+  )
+}
+
+#[cfg(target_os = "windows")]
+fn java_validate(mut cx: FunctionContext) -> JsResult<JsValue> {
+  let data_dir_arg = cx.argument::<JsString>(0)?;
+  let data_dir = String::from(data_dir_arg.value());
+  let mut super_set: Vec<PathBuf> = vec![];
+  scan_registry();
+  super_set.extend(_scan_file_system("C:\\Program Files\\Java".to_owned())
+    .iter()
+    .cloned()
+  );
+  super_set.extend(_scan_file_system(format!("{}\\runtime\\x64", data_dir))
+    .iter()
+    .cloned()
+  );
+
+  let jhome = scan_java_home();
+
+  if let Some(path) = jhome {
+    if !&(path.to_str().to_owned().to_lowercase()).contains("(x86)") {
+      super_set.push(path);
+    }
   }
 
   let mut root_sets = validate_root_vec(&mut super_set);

@@ -383,6 +383,7 @@ dependencies = [
  "serde",
  "serde_json",
  "url",
+ "winreg",
 ]
 
 [[package]]
