@@ -64,10 +64,8 @@ fn latest_open_jdk(mut cx: FunctionContext) -> JsResult<JsValue> {
   )
 }
 
-fn scan_file_system(mut cx: FunctionContext) -> JsResult<JsValue> {
-  let arg = cx.argument::<JsString>(0)?;
-  let search_str = String::from(&arg.value());
-  let search_path = Path::new(&search_str);
+fn _scan_file_system(arg: String) -> Vec<PathBuf> {
+  let search_path = Path::new(&arg);
   let mut valid_paths: Vec<PathBuf> = vec![];
 
   if search_path.exists() {
@@ -82,10 +80,16 @@ fn scan_file_system(mut cx: FunctionContext) -> JsResult<JsValue> {
     }
   }
 
+  valid_paths
+}
+
+fn scan_file_system(mut cx: FunctionContext) -> JsResult<JsValue> {
+  let arg = cx.argument::<JsString>(0)?;
+  
   Ok(
     neon_serde::to_value(
       &mut cx,
-      &valid_paths
+      &_scan_file_system(arg.value())
     )?
   )
 }
