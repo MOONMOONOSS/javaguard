@@ -8,7 +8,7 @@ static BASE_OPEN_JDK: &str = "https://api.adoptopenjdk.net/v2/latestAssets/night
 static mojang_launcher_meta: &str = "https://launchermeta.mojang.com/mc/launcher.json";
 
 #[cfg(target_os = "windows")]
-static REG_KEYS: Vec<&'static str> = vec![
+static REG_KEYS: [&'static str; 2] = [
   "SOFTWARE\\JavaSoft\\Java Runtime Environment",
   "SOFTWARE\\JavaSoft\\Java Development Kit",
 ];
@@ -35,12 +35,12 @@ fn path_to_java<'a>(root_path: &PathBuf) -> PathBuf {
 
 #[cfg(target_os = "windows")]
 fn path_to_java<'a>(root_path: &PathBuf) -> PathBuf {
-  PathBuf::new(format!("{}/bin/javaw.exe", root_path.display()))
+  PathBuf::from(&format!("{}/bin/javaw.exe", root_path.display()))
 }
 
 #[cfg(target_os = "macos")]
 fn path_to_java<'a>(root_path: &PathBuf) -> PathBuf {
-  PathBuf::new(format!("{}/Contents/Home/bin/java", root_path.display()))
+  PathBuf::from(&format!("{}/Contents/Home/bin/java", root_path.display()))
 }
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
@@ -60,14 +60,14 @@ fn scan_registry() {
   
   let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
 
-  for entry in REG_KEYS {
+  for entry in &REG_KEYS {
     match hklm.open_subkey(entry) {
       Ok(val) => {
-        for (name, value) in val.enum_values().map(|x| x.expect("Unable to enumerate registry keys")) {
-          println!("{:#?}", name);
+        for value in val.enum_keys().map(|x| x.expect("Unable to enumerate registry keys")) {
           println!("{:#?}", value);
         }
-      }
+      },
+      _ => {},
     }
   }
 }
@@ -261,7 +261,12 @@ fn java_validate(mut cx: FunctionContext) -> JsResult<JsValue> {
   let jhome = scan_java_home();
 
   if let Some(path) = jhome {
-    if !&(path.to_str().to_owned().to_lowercase()).contains("(x86)") {
+    if !&(path
+      .to_str()
+      .to_owned()
+      .expect("Unable to convert string in java_validate (win32)")
+      .to_lowercase()
+    ).contains("(x86)") {
       super_set.push(path);
     }
   }
