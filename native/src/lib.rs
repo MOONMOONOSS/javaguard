@@ -3,7 +3,7 @@ use neon::prelude::*;
 
 mod openjdk;
 
-static base_open_jdk: &str = "https://api.adoptopenjdk.net/v2/latestAssets/nightly/openjdk";
+static BASE_OPEN_JDK: &str = "https://api.adoptopenjdk.net/v2/latestAssets/nightly/openjdk";
 static mojang_launcher_meta: &str = "https://launchermeta.mojang.com/mc/launcher.json";
 
 #[cfg(target_os = "windows")]
@@ -52,7 +52,7 @@ fn latest_open_jdk(mut cx: FunctionContext) -> JsResult<JsValue> {
   };
   let url = format!(
     "{}{}?os={}&arch=x64&heap_size=normal&openjdk_impl=hotspot&type=jre",
-    base_open_jdk,
+    BASE_OPEN_JDK,
     major.value(),
     os,
   );
