@@ -213,7 +213,8 @@ fn java_validate(mut cx: FunctionContext) -> JsResult<JsValue> {
     super_set.push(path);
   }
 
-  let root_sets = validate_root_vec(&mut super_set);
+  let mut root_sets = validate_root_vec(&mut super_set);
+  root_sets.sort();
   
   Ok(
     neon_serde::to_value(
