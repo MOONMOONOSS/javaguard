@@ -42,11 +42,7 @@ fn latest_open_jdk(mut cx: FunctionContext) -> JsResult<JsValue> {
   let os = String::from(OPERATING_SYS);
   let major: Handle<JsNumber> = match cx.argument_opt(0) {
     Some(val) => {
-      if val.is_a::<JsNumber>() {
-        val.downcast_or_throw::<JsNumber, FunctionContext>(&mut cx)?
-      } else {
-        cx.number(8)
-      }
+      val.downcast_or_throw::<JsNumber, FunctionContext>(&mut cx)?
     },
     None => cx.number(8),
   };
