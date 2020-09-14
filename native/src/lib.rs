@@ -87,6 +87,16 @@ fn scan_registry() -> Vec<PathBuf> {
   candidates
 }
 
+#[cfg(target_os = "macos")]
+fn scan_internet_plugins() -> Option<PathBuf> {
+  let path = PathBuf::from("/Library/Internet Plug-Ins/JavaAppletPlugin.plugin");
+
+  match path.exists() {
+    true => Some(path),
+    false => None,
+  }
+}
+
 fn scan_java_home() -> Option<PathBuf> {
   let home = std::env::var("JAVA_HOME");
 
@@ -247,15 +257,21 @@ fn java_validate(mut cx: FunctionContext) -> JsResult<JsValue> {
     super_set.push(path);
   }
 
+  super_set.dedup();
+
   let mut root_sets = validate_root_vec(&mut super_set);
   root_sets.sort();
   
-  Ok(
-    neon_serde::to_value(
-      &mut cx,
-      &root_sets
-    )?
-  )
+  if root_sets.len() > 0 {
+    Ok(
+      neon_serde::to_value(
+        &mut cx,
+        &root_sets[0].exec_path.as_ref().unwrap(),
+      )?
+    )
+  } else {
+    Ok(cx.null().upcast())
+  }
 }
 
 #[cfg(target_os = "windows")]
@@ -269,7 +285,6 @@ fn java_validate(mut cx: FunctionContext) -> JsResult<JsValue> {
     .iter()
     .cloned()
   );
-  println!("{}\\runtime\\x64", data_dir);
   super_set.extend(_scan_file_system(format!("{}\\runtime\\x64", data_dir))
     .iter()
     .cloned()
@@ -293,12 +308,69 @@ fn java_validate(mut cx: FunctionContext) -> JsResult<JsValue> {
   let mut root_sets = validate_root_vec(&mut super_set);
   root_sets.sort();
   
-  Ok(
-    neon_serde::to_value(
-      &mut cx,
-      &root_sets
-    )?
-  )
+  if root_sets.len() > 0 {
+    Ok(
+      neon_serde::to_value(
+        &mut cx,
+        &root_sets[0].exec_path.as_ref().unwrap(),
+      )?
+    )
+  } else {
+    Ok(cx.null().upcast())
+  }
+}
+
+#[cfg(target_os = "macos")]
+fn java_validate(mut cx: FunctionContext) -> JsResult<JsValue> {
+  let data_dir_arg = cx.argument::<JsString>(0)?;
+  let data_dir = String::from(data_dir_arg.value());
+  let mut super_set: Vec<PathBuf> = vec![];
+
+  super_set.extend(_scan_file_system("/Library/Java/JavaVirtualMachines".to_owned())
+    .iter()
+    .cloned()
+  );
+  super_set.extend(_scan_file_system(format!("{}/runtime/x64", data_dir))
+    .iter()
+    .cloned()
+  );
+
+  // Check Internet Plugins folder
+  match scan_internet_plugins() {
+    Some(val) => super_set.push(val),
+    None => {},
+  };
+
+  let jhome = scan_java_home();
+
+  if let Some(path) = jhome {
+    if &(path
+      .to_str()
+      .to_owned()
+      .expect("Unable to convert string in java_validate (darwin)")
+      .to_lowercase()
+    ).contains("/Contents/Home") {
+      super_set.push(PathBuf::from("/Contents/Home"));
+    } else {
+      super_set.push(path);
+    }
+  }
+
+  super_set.dedup();
+
+  let mut root_sets = validate_root_vec(&mut super_set);
+  root_sets.sort();
+  
+  if root_sets.len() > 0 {
+    Ok(
+      neon_serde::to_value(
+        &mut cx,
+        &root_sets[0].exec_path.as_ref().unwrap(),
+      )?
+    )
+  } else {
+    Ok(cx.null().upcast())
+  }
 }
 
 register_module!(mut cx, {
