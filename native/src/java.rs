@@ -116,7 +116,7 @@ impl RuntimeVersion {
 
     let parts: Vec<&str> = ver_string.split('-').collect();
 
-    let build = parts[1][2..].trim().parse::<u16>().expect("Unable to parse build number");
+    let build = parts[1][2..].trim().parse::<u16>().unwrap_or(0u16);
 
     let parts: Vec<&str> = parts[0].split('_').collect();
     let major_vec: Vec<&str> = parts[0].split('.').collect();
