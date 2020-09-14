@@ -66,10 +66,10 @@ fn scan_registry() -> Vec<PathBuf> {
       Ok(val) => {
         for value in val.enum_keys().map(|x| x.expect("Unable to enumerate registry keys")) {
           println!("{:#?}", value);
-          if value.to_str().contains("1.8") {
+          if value.as_str().contains("1.8") {
             let sub_val = val.open_subkey(value).expect("Unable to open registry subkey");
 
-            match sub_val.get_value::<String>("JavaHome") {
+            match sub_val.get_value::<String, _>("JavaHome") {
               Ok(path) => {
                 if !&path.contains("(x86)") {
                   candidates.push(PathBuf::from(&path));
@@ -263,11 +263,13 @@ fn java_validate(mut cx: FunctionContext) -> JsResult<JsValue> {
   let data_dir_arg = cx.argument::<JsString>(0)?;
   let data_dir = String::from(data_dir_arg.value());
   let mut super_set: Vec<PathBuf> = vec![];
-  println!("{:#?}", scan_registry());
+
+  super_set.extend(scan_registry().iter().cloned());
   super_set.extend(_scan_file_system("C:\\Program Files\\Java".to_owned())
     .iter()
     .cloned()
   );
+  println!("{}\\runtime\\x64", data_dir);
   super_set.extend(_scan_file_system(format!("{}\\runtime\\x64", data_dir))
     .iter()
     .cloned()
@@ -285,6 +287,8 @@ fn java_validate(mut cx: FunctionContext) -> JsResult<JsValue> {
       super_set.push(path);
     }
   }
+
+  super_set.dedup();
 
   let mut root_sets = validate_root_vec(&mut super_set);
   root_sets.sort();
