@@ -1,11 +1,12 @@
 use std::path::{Path, PathBuf};
 use neon::prelude::*;
 
+mod mojang;
 mod java;
 mod openjdk;
 
 static BASE_OPEN_JDK: &str = "https://api.adoptopenjdk.net/v2/latestAssets/nightly/openjdk";
-static mojang_launcher_meta: &str = "https://launchermeta.mojang.com/mc/launcher.json";
+static MOJANG_LAUNCHER_META: &str = "https://launchermeta.mojang.com/mc/launcher.json";
 
 #[cfg(target_os = "windows")]
 static REG_KEYS: [&'static str; 2] = [
@@ -200,9 +201,23 @@ fn latest_open_jdk(mut cx: FunctionContext) -> JsResult<JsValue> {
     neon_serde::to_value(
       &mut cx,
       &blocking::get(&url)
-        .unwrap()
+        .expect("Failed to fetch latest OpenJDK data")
         .json::<Vec<openjdk::JreArtifact>>()
-        .unwrap()
+        .expect("Failed to deserialize OpenJDK data to JSON")
+    )?
+  )
+}
+
+fn mojang_launcher_data(mut cx: FunctionContext) -> JsResult<JsValue> {
+  use reqwest::blocking;
+
+  Ok(
+    neon_serde::to_value(
+      &mut cx,
+      &blocking::get(MOJANG_LAUNCHER_META)
+        .expect("Failed to fetch Mojang launcher metadata")
+        .json::<Vec<mojang::LauncherMetadata>>()
+        .expect("Failed to deserialize Mojang launcher metadata to JSON")
     )?
   )
 }
@@ -266,7 +281,7 @@ fn java_validate(mut cx: FunctionContext) -> JsResult<JsValue> {
     Ok(
       neon_serde::to_value(
         &mut cx,
-        &root_sets[0].exec_path.as_ref().unwrap(),
+        &root_sets[0].exec_path.as_ref().expect("Primary root set candidate does not have an exe path"),
       )?
     )
   } else {
@@ -312,7 +327,7 @@ fn java_validate(mut cx: FunctionContext) -> JsResult<JsValue> {
     Ok(
       neon_serde::to_value(
         &mut cx,
-        &root_sets[0].exec_path.as_ref().unwrap(),
+        &root_sets[0].exec_path.as_ref().expect("Primary root set candidate does not have an exe path"),
       )?
     )
   } else {
@@ -365,7 +380,7 @@ fn java_validate(mut cx: FunctionContext) -> JsResult<JsValue> {
     Ok(
       neon_serde::to_value(
         &mut cx,
-        &root_sets[0].exec_path.as_ref().unwrap(),
+        &root_sets[0].exec_path.as_ref().expect("Primary root set candidate does not have an exe path"),
       )?
     )
   } else {
@@ -376,5 +391,6 @@ fn java_validate(mut cx: FunctionContext) -> JsResult<JsValue> {
 register_module!(mut cx, {
   cx.export_function("latestOpenJdk", latest_open_jdk);
   cx.export_function("scanFileSystem", scan_file_system);
-  cx.export_function("javaValidate", java_validate)
+  cx.export_function("javaValidate", java_validate);
+  cx.export_function("fetchMojangLauncherData", mojang_launcher_data)
 });
