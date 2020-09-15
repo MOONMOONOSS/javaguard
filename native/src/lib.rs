@@ -98,6 +98,18 @@ fn scan_internet_plugins() -> Option<PathBuf> {
   }
 }
 
+fn path_to_java_js(mut cx: FunctionContext) -> JsResult<JsValue> {
+  let path: Handle<JsString> = cx.argument(0)?;
+  let ret_path = path_to_java(&PathBuf::from(path.value()));
+
+  Ok(
+    neon_serde::to_value(
+      &mut cx,
+      &ret_path.to_str(),
+    )?
+  )
+}
+
 fn scan_java_home() -> Option<PathBuf> {
   let home = std::env::var("JAVA_HOME");
 
@@ -160,6 +172,18 @@ fn validate_java_binary(bin_path: &mut PathBuf) -> java::JavaMeta {
   } else {
     java::JavaMeta::new()
   }
+}
+
+fn validate_java_binary_js(mut cx: FunctionContext) -> JsResult<JsValue> {
+  let path: Handle<JsString> = cx.argument(0)?;
+  let mut path_buf = PathBuf::from(path.value());
+
+  Ok(
+    neon_serde::to_value(
+      &mut cx,
+      &validate_java_binary(&mut path_buf),
+    )?
+  )
 }
 
 fn validate_root_vec(root: &mut Vec<PathBuf>) -> Vec<java::JavaMeta> {
@@ -391,6 +415,8 @@ fn java_validate(mut cx: FunctionContext) -> JsResult<JsValue> {
 register_module!(mut cx, {
   cx.export_function("latestOpenJdk", latest_open_jdk);
   cx.export_function("scanFileSystem", scan_file_system);
-  cx.export_function("javaValidate", java_validate);
-  cx.export_function("fetchMojangLauncherData", mojang_launcher_data)
+  cx.export_function("validateJava", java_validate);
+  cx.export_function("fetchMojangLauncherData", mojang_launcher_data);
+  cx.export_function("validateJavaBinary", validate_java_binary_js);
+  cx.export_function("javaExecFromRoot", path_to_java_js)
 });
