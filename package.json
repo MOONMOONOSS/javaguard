@@ -1,6 +1,6 @@
 {
   "name": "java-guard",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "An internal Java Runtime Environment validator used within Helios Launcher",
   "main": "lib/index.js",
   "repository": {
