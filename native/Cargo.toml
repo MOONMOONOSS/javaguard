@@ -1,6 +1,6 @@
 [package]
 name = "java-guard"
-version = "0.1.3"
+version = "0.1.4"
 authors = ["Joseph \"Dunkel\" Zurowski <12567900+Dunklheit@users.noreply.github.com>"]
 license = "GPL-3.0"
 build = "build.rs"
