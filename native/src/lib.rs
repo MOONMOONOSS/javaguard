@@ -383,12 +383,13 @@ fn java_validate(mut cx: FunctionContext) -> JsResult<JsValue> {
   let jhome = scan_java_home();
 
   if let Some(path) = jhome {
-    if &(path
+    if path
       .to_str()
       .to_owned()
       .expect("Unable to convert string in java_validate (darwin)")
       .to_lowercase()
-    ).contains("/Contents/Home") {
+      .contains("/Contents/Home")
+    {
       super_set.push(PathBuf::from("/Contents/Home"));
     } else {
       super_set.push(path);
