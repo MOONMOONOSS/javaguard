@@ -414,10 +414,10 @@ fn java_validate(mut cx: FunctionContext) -> JsResult<JsValue> {
 }
 
 register_module!(mut cx, {
-  cx.export_function("latestOpenJdk", latest_open_jdk);
-  cx.export_function("scanFileSystem", scan_file_system);
-  cx.export_function("validateJava", java_validate);
-  cx.export_function("fetchMojangLauncherData", mojang_launcher_data);
-  cx.export_function("validateJavaBinary", validate_java_binary_js);
-  cx.export_function("javaExecFromRoot", path_to_java_js)
+  cx.export_function("latestOpenJdk", latest_open_jdk)?;
+  cx.export_function("scanFileSystem", scan_file_system)?;
+  cx.export_function("validateJava", java_validate)?;
+  cx.export_function("fetchMojangLauncherData", mojang_launcher_data)?;
+  cx.export_function("validateJavaBinary", validate_java_binary_js)?;
+  cx.export_function("javaExecFromRoot", path_to_java_js);
 });
